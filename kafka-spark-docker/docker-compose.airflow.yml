@@ -1,0 +1,113 @@
+version: '3.8'
+# user-defined network: docker will only create it if it doesn't exist
+networks:
+  airflow_network:
+    driver: bridge
+
+# airflow configs
+x-airflow-common:  # extension field that defines common settings for Airflow services
+  &airflow-common  # this creates anchor named airflow-common that can be referenced elsewhere in the file
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.0.1}
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: CeleryExecutor
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+  volumes:  # Bind mount volumes to sync local & container folders. These volumes are used by all airflow related containers: webserver, scheduler, worker, airflow-init, flower
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./captors:/opt/airflow/captors  # mount volume to sync both directories
+    - ./captors_data:/opt/airflow/captors_data  # mount volume to sync both directories
+  user: "${AIRFLOW_UID:-50000}:${AIRFLOW_GID:-50000}"  # To set up user & group ID for running the container. Default, 50000:50000
+  depends_on:
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
+  networks: # added
+    - airflow_network
+services:
+# airflow services
+  postgres:
+    image: postgres:13
+    environment: #  Set env variables for postgres container, i.e. user, password & db name
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes: # named volume 'postgres-db-volume' defined at the top level to persist db data
+      - postgres-db-volume:/var/lib/postgresql/data
+    networks: # added
+      - airflow_network
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "airflow" ]
+      interval: 5s
+      retries: 5
+    restart: always # container restarts automatically if it fails
+
+  redis: # used as a message broker for Celery
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks: # added
+      - airflow_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    restart: always # container restarts automatically if it fails
+
+  airflow-webserver:
+    <<: *airflow-common # inherits all settings from airflow-common anchor
+    command: webserver  # overrides the default command to run the Airflow webserver
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  airflow-scheduler:
+    <<: *airflow-common
+#    container_name: airflow-scheduler
+    command: scheduler  # override the default command to run the airflow scheduler
+    restart: always
+
+  airflow-worker:
+    <<: *airflow-common
+#    container_name: airflow-worker
+    command: celery worker
+    restart: always
+
+  airflow-init: # initialization service for Airflow: used for setting up the db & creating default user
+    <<: *airflow-common
+#    container_name: airflow-init
+    command: version  # overrides the default command to run airflow version defined in this file
+    environment: # to set additional env variables
+      <<: *airflow-common-env
+      _AIRFLOW_DB_UPGRADE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+
+  flower: # flower service for monitoring celery
+    <<: *airflow-common
+    command: celery flower  # overrides default command to run flower
+    ports:
+      - "5555:5555"
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:5555/" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+volumes: # this is a named volume defined at the top level for reusability purposes in other services, to persist data even if container is stopped or removed
+  postgres-db-volume:

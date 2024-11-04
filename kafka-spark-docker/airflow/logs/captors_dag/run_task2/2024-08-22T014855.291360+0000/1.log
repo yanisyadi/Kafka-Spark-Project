@@ -1,0 +1,24 @@
+[2024-08-22 01:48:57,455] {taskinstance.py:851} INFO - Dependencies all met for <TaskInstance: captors_dag.run_task2 2024-08-22T01:48:55.291360+00:00 [queued]>
+[2024-08-22 01:48:57,465] {taskinstance.py:851} INFO - Dependencies all met for <TaskInstance: captors_dag.run_task2 2024-08-22T01:48:55.291360+00:00 [queued]>
+[2024-08-22 01:48:57,466] {taskinstance.py:1042} INFO - 
+--------------------------------------------------------------------------------
+[2024-08-22 01:48:57,466] {taskinstance.py:1043} INFO - Starting attempt 1 of 2
+[2024-08-22 01:48:57,467] {taskinstance.py:1044} INFO - 
+--------------------------------------------------------------------------------
+[2024-08-22 01:48:57,481] {taskinstance.py:1063} INFO - Executing <Task(PythonOperator): run_task2> on 2024-08-22T01:48:55.291360+00:00
+[2024-08-22 01:48:57,485] {standard_task_runner.py:52} INFO - Started process 45 to run task
+[2024-08-22 01:48:57,489] {standard_task_runner.py:76} INFO - Running: ['airflow', 'tasks', 'run', 'captors_dag', 'run_task2', '2024-08-22T01:48:55.291360+00:00', '--job-id', '3', '--pool', 'default_pool', '--raw', '--subdir', 'DAGS_FOLDER/mod_captors.py', '--cfg-path', '/tmp/tmpf3l_fhia', '--error-file', '/tmp/tmpo2op4ne0']
+[2024-08-22 01:48:57,489] {standard_task_runner.py:77} INFO - Job 3: Subtask run_task2
+[2024-08-22 01:48:57,530] {logging_mixin.py:104} INFO - Running <TaskInstance: captors_dag.run_task2 2024-08-22T01:48:55.291360+00:00 [running]> on host 03d0fb8a5147
+[2024-08-22 01:48:57,570] {taskinstance.py:1257} INFO - Exporting the following env vars:
+AIRFLOW_CTX_DAG_OWNER=airflow
+AIRFLOW_CTX_DAG_ID=captors_dag
+AIRFLOW_CTX_TASK_ID=run_task2
+AIRFLOW_CTX_EXECUTION_DATE=2024-08-22T01:48:55.291360+00:00
+AIRFLOW_CTX_DAG_RUN_ID=manual__2024-08-22T01:48:55.291360+00:00
+[2024-08-22 01:48:57,580] {logging_mixin.py:104} INFO - Fetching data from captors
+[2024-08-22 01:48:57,588] {logging_mixin.py:104} INFO - Successfully fetched captors data
+[2024-08-22 01:48:57,589] {python.py:118} INFO - Done. Returned value was: None
+[2024-08-22 01:48:57,603] {taskinstance.py:1166} INFO - Marking task as SUCCESS. dag_id=captors_dag, task_id=run_task2, execution_date=20240822T014855, start_date=20240822T014857, end_date=20240822T014857
+[2024-08-22 01:48:57,636] {taskinstance.py:1220} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2024-08-22 01:48:57,663] {local_task_job.py:146} INFO - Task exited with return code 0

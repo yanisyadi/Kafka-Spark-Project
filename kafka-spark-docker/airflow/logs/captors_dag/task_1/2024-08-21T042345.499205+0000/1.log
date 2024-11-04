@@ -1,0 +1,34 @@
+[2024-08-21 04:25:06,319] {taskinstance.py:851} INFO - Dependencies all met for <TaskInstance: captors_dag.task_1 2024-08-21T04:23:45.499205+00:00 [None]>
+[2024-08-21 04:25:06,332] {taskinstance.py:851} INFO - Dependencies all met for <TaskInstance: captors_dag.task_1 2024-08-21T04:23:45.499205+00:00 [None]>
+[2024-08-21 04:25:06,333] {taskinstance.py:1042} INFO - 
+--------------------------------------------------------------------------------
+[2024-08-21 04:25:06,333] {taskinstance.py:1043} INFO - Starting attempt 1 of 4
+[2024-08-21 04:25:06,333] {taskinstance.py:1044} INFO - 
+--------------------------------------------------------------------------------
+[2024-08-21 04:25:06,342] {taskinstance.py:1063} INFO - Executing <Task(PythonOperator): task_1> on 2024-08-21T04:23:45.499205+00:00
+[2024-08-21 04:25:06,348] {standard_task_runner.py:52} INFO - Started process 44 to run task
+[2024-08-21 04:25:06,352] {standard_task_runner.py:76} INFO - Running: ['airflow', 'tasks', 'run', 'captors_dag', 'task_1', '2024-08-21T04:23:45.499205+00:00', '--job-id', '2', '--pool', 'default_pool', '--raw', '--subdir', 'DAGS_FOLDER/mod_captors.py', '--cfg-path', '/tmp/tmpllrax1ho', '--error-file', '/tmp/tmphrrm1rwf']
+[2024-08-21 04:25:06,353] {standard_task_runner.py:77} INFO - Job 2: Subtask task_1
+[2024-08-21 04:25:06,396] {logging_mixin.py:104} INFO - Running <TaskInstance: captors_dag.task_1 2024-08-21T04:23:45.499205+00:00 [running]> on host 852297bd99a0
+[2024-08-21 04:25:06,435] {taskinstance.py:1257} INFO - Exporting the following env vars:
+AIRFLOW_CTX_DAG_OWNER=airflow
+AIRFLOW_CTX_DAG_ID=captors_dag
+AIRFLOW_CTX_TASK_ID=task_1
+AIRFLOW_CTX_EXECUTION_DATE=2024-08-21T04:23:45.499205+00:00
+[2024-08-21 04:25:06,436] {taskinstance.py:1455} ERROR - [Errno 2] No such file or directory: '/app/captors_data/1.json'
+Traceback (most recent call last):
+  File "/home/airflow/.local/lib/python3.6/site-packages/airflow/models/taskinstance.py", line 1112, in _run_raw_task
+    self._prepare_and_execute_task_with_callbacks(context, task)
+  File "/home/airflow/.local/lib/python3.6/site-packages/airflow/models/taskinstance.py", line 1285, in _prepare_and_execute_task_with_callbacks
+    result = self._execute_task(context, task_copy)
+  File "/home/airflow/.local/lib/python3.6/site-packages/airflow/models/taskinstance.py", line 1315, in _execute_task
+    result = task_copy.execute(context=context)
+  File "/home/airflow/.local/lib/python3.6/site-packages/airflow/operators/python.py", line 117, in execute
+    return_value = self.execute_callable()
+  File "/home/airflow/.local/lib/python3.6/site-packages/airflow/operators/python.py", line 128, in execute_callable
+    return self.python_callable(*self.op_args, **self.op_kwargs)
+  File "/opt/airflow/dags/mod_captors.py", line 15, in copy_file
+    for file in os.listdir(dst_path):
+FileNotFoundError: [Errno 2] No such file or directory: '/app/captors_data/1.json'
+[2024-08-21 04:25:06,441] {taskinstance.py:1503} INFO - Marking task as UP_FOR_RETRY. dag_id=captors_dag, task_id=task_1, execution_date=20240821T042345, start_date=20240821T042506, end_date=20240821T042506
+[2024-08-21 04:25:06,486] {local_task_job.py:146} INFO - Task exited with return code 1

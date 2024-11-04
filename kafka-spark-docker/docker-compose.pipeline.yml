@@ -1,0 +1,115 @@
+version: '3.8'
+# user-defined network: docker will create if it doesn't exist
+networks:
+  kafka_network:
+    driver: bridge
+  airflow_network:
+    driver: bridge
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    deploy: # add
+      resources:
+        limits:
+          memory: 1g
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - kafka_network
+    healthcheck:  # added
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      retries: 3
+  kafka:
+    #image: wurstmeister/kafka
+    build:
+      context: .
+      dockerfile: kafka/Dockerfile
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9092,OUTSIDE://localhost:9093
+      KAFKA_LISTENER_NAMES: INSIDE,OUTSIDE
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENER_NAME_TO_ADDRESS_MAP: INSIDE:kafka:9092,OUTSIDE:localhost:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    networks:
+      - kafka_network
+    healthcheck:  # added
+      test: [ "CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092" ]
+      interval: 10s
+      retries: 3
+  producer:
+    build:
+      context: .  # to set the build context to the dir containing docker-compose.yml
+      dockerfile: producer/Dockerfile # path to Dockerfile relative to build context
+    container_name: producer
+    depends_on:
+      - kafka
+    volumes:
+      - ./captors:/app/captors  # mount volume to sync both directories
+      - ./captors_data:/app/captors_data  # mount volume to sync both directories
+    networks:
+      - kafka_network
+      - airflow_network
+  consumer:
+    build:
+      context: .
+      dockerfile: consumer/Dockerfile
+    container_name: consumer
+    environment:
+      - SPARK_MASTER_URL=spark://spark:7077
+    depends_on:
+      - producer
+    networks:
+      - kafka_network
+  spark:
+    image: docker.io/bitnami/spark:3.5.1
+    container_name: spark
+    hostname: spark
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+      - JAVA_HOME=/opt/bitnami/java  # Set JAVA_HOME
+    ports:
+      - "8080:8080" # web UI
+      - "7077:7077" # spark master port
+    depends_on:
+      - consumer
+    volumes:
+#      - spark_logs:/logs  # named volume to store logs
+      - ./captors:/opt/spark/   # Bind Mount to sync local ./captors to docker /opt/spark
+    networks:
+      - kafka_network
+  spark-worker:
+    image: docker.io/bitnami/spark:3.5.1
+    container_name: spark-worker
+    hostname: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+      - JAVA_HOME=/opt/bitnami/java  # Set JAVA_HOME
+    depends_on:
+      - spark
+    networks:
+      - kafka_network
